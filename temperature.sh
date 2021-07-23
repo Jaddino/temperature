@@ -3,17 +3,20 @@
 SENSORS_LIST="sensors_list.conf"
 OUTFILE="Data4Zabbix.out"
 BAD_RUN="bad.run.flag"
-SCRIPT="./MiTemperature2/LYWSD03MMC.py"
-LOGFILE="/var/log/temperature.log"
+#SCRIPT="./MiTemperature2/LYWSD03MMC.py"
+SCRIPT="./LYWSD03MMC.py"
+#LOGFILE="/var/log/temperature.log"
+TIMEOUT="60"
+SCRIPT_TO_CONSOLE="SendToZabbix.sh"
 HOSTNAME="pi"
 
 #sudo pkill -f temperature.sh
 sudo pkill -f LYWSD03MMC
 sudo pkill -f bluepy-helper
 
-cd /var/lib/temperature/
+cd `dirname $0`
 
-date
+echo "Script started at `date`"
 
 if [ -e ${BAD_RUN} ]
 then
@@ -31,7 +34,7 @@ do
 	NAME=$(echo ${ROW} | awk -F";" '{print $2}')
 	date
 	echo "Retriving data from ${NAME} with MAC address ${MAC}..."
-	timeout 60 ${SCRIPT} --device ${MAC} --count 1 --unreachable-count 5 --round --debounce --battery --name ${NAME} --callback SendToZabbix.sh
+	timeout ${TIMEOUT} ${SCRIPT} --device ${MAC} --count 1 --unreachable-count 5 --round --debounce --battery --name ${NAME} --callback ${SCRIPT_TO_CONSOLE}
 done
 
 DATA2SEND=$( wc -l ${OUTFILE} | awk '{print $1}' )
@@ -43,11 +46,9 @@ if [ $? = "0" ]
 then
 	echo $( wc -l ${OUTFILE} | awk '{print $1}' )" data sent correctly"
 	echo "Deleting file..."
-#	rm -rf ${OUTFILE}
+	rm -rf ${OUTFILE}
 	rm -rf ${BAD_RUN}
 else
 	echo "Do not delete Bud Run File"
 fi
 
-# ./MiTemperature2/LYWSD03MMC.py --device A4:C1:38:FD:00:99 --count 1 --unreachable-count 5 --round --debounce --name STANZA_MATRIMONIALE --callback sendToZabbix.sh
-# ./MiTemperature2/LYWSD03MMC.py --device A4:C1:38:FD:00:99 --count 1 --unreachable-count 5 --round --debounce --atc --battery --name STANZA_MATRIMONIALE --callback SendToZabbix.sh
